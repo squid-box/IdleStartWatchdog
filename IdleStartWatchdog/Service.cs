@@ -2,7 +2,6 @@
 {
     using System;
     using System.Diagnostics;
-    using System.IO;
     using System.ServiceProcess;
     using System.Timers;
 
@@ -10,12 +9,22 @@
 
     public partial class Service : ServiceBase
     {
+        private EventLog _log;
         private readonly Timer _timer;
         private const int MinutesToWaitBeforeShutdown = 5;
+
 
         public Service()
         {
             InitializeComponent();
+
+            if (IsSomeoneLoggedOn())
+            {
+                // Service started while user logged on, nothing to do.
+                Stop();
+            }
+
+            _log = new EventLog("Application", ".", "IdleStartWatchdog");
             _timer = new Timer(6000) {AutoReset = true};
             _timer.Elapsed += CheckStatus;
             Log("Service initialized.");
@@ -26,31 +35,24 @@
             // If someone has logged in, this service is done.
             if (IsSomeoneLoggedOn())
             {
-                Log("Someone logged on, stopping service.");
-                this.Stop();
+                Log("User logged on, stopping service.");
+                Stop();
             }
             else if (TimeSpan.FromMilliseconds(Environment.TickCount) > TimeSpan.FromMinutes(MinutesToWaitBeforeShutdown))
             {
                 // Check if computer has been running for long enough to shut it down.
-                Log($"Noone logged on after {MinutesToWaitBeforeShutdown} minutes, shutting down computer.");
+                Log($"No-one logged on after {MinutesToWaitBeforeShutdown} minutes, shutting down computer.", EventLogEntryType.Warning);
                 ShutdownComputer();
-            }
-            else
-            {
-                // Just keep rolling...
-                //Log($"Time since computer started: {TimeSpan.FromMilliseconds(Environment.TickCount)}, time limit: {TimeSpan.FromMinutes(MinutesToWaitBeforeShutdown)}.");
             }
         }
 
         protected override void OnStart(string[] args)
         {
-            Log("Starting timer/service.");
             _timer.Start();
         }
 
         protected override void OnStop()
         {
-            Log("Stopping timer/service.");
             _timer.Stop();
         }
 
@@ -84,9 +86,9 @@
             return false;
         }
 
-        private static void Log(string message)
+        private void Log(string message, EventLogEntryType level = EventLogEntryType.Information)
         {
-            File.AppendAllText($"{AppDomain.CurrentDomain.BaseDirectory}\\service.log", $"{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")}|{message}\r\n");
+            _log.WriteEntry(message, level);
         }
     }
 }
