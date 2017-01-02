@@ -18,15 +18,10 @@
         {
             InitializeComponent();
 
-            if (IsSomeoneLoggedOn())
-            {
-                // Service started while user logged on, nothing to do.
-                Stop();
-            }
-
             _log = new EventLog("Application", ".", "IdleStartWatchdog");
             _timer = new Timer(6000) {AutoReset = true};
             _timer.Elapsed += CheckStatus;
+
             Log("Service initialized.");
         }
 
@@ -48,12 +43,23 @@
 
         protected override void OnStart(string[] args)
         {
-            _timer.Start();
+            if (IsSomeoneLoggedOn())
+            {
+                // Service started while user logged on, nothing to do.
+                Stop();
+            }
+            else
+            {
+                _timer.Start();
+            }
         }
 
         protected override void OnStop()
         {
-            _timer.Stop();
+            if (_timer != null)
+            {
+                _timer.Stop();
+            }
         }
 
         private static void ShutdownComputer()
