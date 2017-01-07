@@ -12,46 +12,68 @@
         private EventLog _log;
         private readonly Timer _timer;
         private const int MinutesToWaitBeforeShutdown = 5;
-
+        private ServiceStates _currentState;
+        private DateTime _lastTimeUserLoggedOut;
 
         public Service()
         {
             InitializeComponent();
+            _currentState = ServiceStates.InitialStart;
+            _lastTimeUserLoggedOut = DateTime.MinValue;
 
             _log = new EventLog("Application", ".", "IdleStartWatchdog");
-            _timer = new Timer(6000) {AutoReset = true};
+            _timer = new Timer(1000) {AutoReset = true};
             _timer.Elapsed += CheckStatus;
-
-            Log("Service initialized.");
         }
 
         private void CheckStatus(object sender, ElapsedEventArgs elapsedEventArgs)
         {
-            // If someone has logged in, this service is done.
-            if (IsSomeoneLoggedOn())
+            if (_currentState == ServiceStates.InitialStart)
             {
-                Log("User logged on, stopping service.");
-                Stop();
+                // If someone has logged in, this service is done.
+                if (IsSomeoneLoggedOn)
+                {
+                    Log("User logged on, switching state.");
+                    _currentState = ServiceStates.UserLoggedIn;
+                }
+                else if (TimeSpan.FromMilliseconds(Environment.TickCount) > TimeSpan.FromMinutes(MinutesToWaitBeforeShutdown))
+                {
+                    // Check if computer has been running for long enough to shut it down.
+                    Log($"No-one logged on after {MinutesToWaitBeforeShutdown} minutes, shutting down computer.", EventLogEntryType.Warning);
+                    ShutdownComputer();
+                }
             }
-            else if (TimeSpan.FromMilliseconds(Environment.TickCount) > TimeSpan.FromMinutes(MinutesToWaitBeforeShutdown))
+            else if (_currentState == ServiceStates.UserLoggedIn)
             {
-                // Check if computer has been running for long enough to shut it down.
-                Log($"No-one logged on after {MinutesToWaitBeforeShutdown} minutes, shutting down computer.", EventLogEntryType.Warning);
-                ShutdownComputer();
+                if (!IsSomeoneLoggedOn)
+                {
+                    Log("User logged out.");
+                    _currentState = ServiceStates.UserLoggedOut;
+                    _lastTimeUserLoggedOut = DateTime.Now;
+                }
+            }
+            else if (_currentState == ServiceStates.UserLoggedOut)
+            {
+                if (IsSomeoneLoggedOn)
+                {
+                    Log("Someone logged in again.");
+                    _currentState = ServiceStates.UserLoggedIn;
+                }
+                else
+                {
+                    var loggedOut = DateTime.Now - _lastTimeUserLoggedOut;
+                    if (loggedOut > TimeSpan.FromMinutes(MinutesToWaitBeforeShutdown))
+                    {
+                        Log($"No-one has signed in again after {MinutesToWaitBeforeShutdown} minutes, shutting down computer.", EventLogEntryType.Warning);
+                        ShutdownComputer();
+                    }
+                }
             }
         }
 
         protected override void OnStart(string[] args)
         {
-            if (IsSomeoneLoggedOn())
-            {
-                // Service started while user logged on, nothing to do.
-                Stop();
-            }
-            else
-            {
-                _timer.Start();
-            }
+            _timer.Start();
         }
 
         protected override void OnStop()
@@ -79,17 +101,20 @@
         /// http://stackoverflow.com/a/732639
         /// </summary>
         /// <returns>True if any user is logged in.</returns>
-        private static bool IsSomeoneLoggedOn()
+        private static bool IsSomeoneLoggedOn
         {
-            foreach (var session in new TerminalServicesManager().GetSessions())
+            get
             {
-                if (!string.IsNullOrEmpty(session.UserName))
+                foreach (var session in new TerminalServicesManager().GetSessions())
                 {
-                    return true;
+                    if (!string.IsNullOrEmpty(session.UserName))
+                    {
+                        return true;
+                    }
                 }
-            }
 
-            return false;
+                return false;
+            }
         }
 
         private void Log(string message, EventLogEntryType level = EventLogEntryType.Information)
