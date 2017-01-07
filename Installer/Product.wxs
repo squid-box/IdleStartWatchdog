@@ -1,6 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
-	<Product Id="a0f649fd-96e0-480f-aef2-0bd0023c13d1" Name="Idle-Start Watchdog" Language="1033" Version="1.0.0.0" Manufacturer="Joel Ahlgren" UpgradeCode="d52a5d89-bc52-4ad1-a2a9-f350ebed8848">
+  <?define ProductVersion=!(bind.FileVersion.AppExecutable) ?>
+  
+  <Product 
+    Id="a0f649fd-96e0-480f-aef2-0bd0023c13d1" 
+    Name="Idle-Start Watchdog" 
+    Language="1033" 
+    Version="$(var.ProductVersion)" 
+    Manufacturer="Joel Ahlgren" 
+    UpgradeCode="d52a5d89-bc52-4ad1-a2a9-f350ebed8848">
+    
 		<Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
 
     <Icon Id="icon.ico" SourceFile="..\IdleStartWatchdog\icon.ico"/>
