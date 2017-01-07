@@ -3,6 +3,10 @@
 	<Product Id="a0f649fd-96e0-480f-aef2-0bd0023c13d1" Name="Idle-Start Watchdog" Language="1033" Version="1.0.0.0" Manufacturer="Joel Ahlgren" UpgradeCode="d52a5d89-bc52-4ad1-a2a9-f350ebed8848">
 		<Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
 
+    <Icon Id="icon.ico" SourceFile="..\IdleStartWatchdog\icon.ico"/>
+    <Property Id="ARPPRODUCTICON" Value="icon.ico" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/squid-box/IdleStartWatchdog" />
+
 		<MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
 		<MediaTemplate EmbedCab="yes" />
 
@@ -21,14 +25,14 @@
 
 	<Fragment>
 		<ComponentGroup Id="ApplicationFiles" Directory="INSTALLFOLDER">
-			<!-- TODO: Remove the comments around this Component element and the ComponentRef below in order to add resources to this installer. -->
-			<Component Id="ApplicationFile" Guid="a46853d2-fa56-47dd-bfa9-10bf0c0f1679">
+		  <Component Id="ApplicationFile" Guid="a46853d2-fa56-47dd-bfa9-10bf0c0f1679">
 			  <File Id="AppExecutable" Source="..\Stage\$(var.IdleStartWatchdog.Configuration)\IdleStartWatchdog.exe"/>
         <File Id="CassiaDll" Source="..\Stage\$(var.IdleStartWatchdog.Configuration)\Cassia.dll"/>
+        <File Id="Readme" Source="..\Stage\$(var.IdleStartWatchdog.Configuration)\ReadMe.txt"/>
         <ServiceInstall Id="IdleStartWatchdog" Type="ownProcess" Name="IdleStartWatchdog" DisplayName="Idle-Start Watchdog" Description="Cat-midnight-start-protection of Windows computer." Start="auto" Account="LocalSystem" ErrorControl="ignore">
           <util:PermissionEx  User="Everyone" ServicePauseContinue="yes" ServiceQueryStatus="yes" ServiceStart="yes" ServiceStop="yes" ServiceUserDefinedControl="yes" />
         </ServiceInstall>
-        <ServiceControl Id="IdleStartWatchdog" Start="install" Stop="both" Remove="both" Name="IdleStartWatchdog" Wait="no" />
+        <ServiceControl Id="IdleStartWatchdog" Start="install" Stop="both" Remove="both" Name="IdleStartWatchdog" Wait="yes" />
 			</Component>
 		</ComponentGroup>
 	</Fragment>

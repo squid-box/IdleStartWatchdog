@@ -11,7 +11,7 @@
     {
         private EventLog _log;
         private readonly Timer _timer;
-        private const int MinutesToWaitBeforeShutdown = 5;
+        private const int MinutesToWaitBeforeShutdown = 10;
         private ServiceStates _currentState;
         private DateTime _lastTimeUserLoggedOut;
 
