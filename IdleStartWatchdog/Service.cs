@@ -14,12 +14,14 @@
         private const int MinutesToWaitBeforeShutdown = 10;
         private ServiceStates _currentState;
         private DateTime _lastTimeUserLoggedOut;
+        private bool _shutdownInitiated;
 
         public Service()
         {
             InitializeComponent();
             _currentState = ServiceStates.InitialStart;
             _lastTimeUserLoggedOut = DateTime.MinValue;
+            _shutdownInitiated = false;
 
             _log = new EventLog("Application", ".", "IdleStartWatchdog");
             _timer = new Timer(1000) {AutoReset = true};
@@ -84,8 +86,13 @@
             }
         }
 
-        private static void ShutdownComputer()
+        private void ShutdownComputer()
         {
+            if (_shutdownInitiated)
+            {
+                return;
+            }
+
             var psi = new ProcessStartInfo()
             {
                 FileName = "shutdown",
@@ -94,6 +101,7 @@
                 UseShellExecute = false
             };
 
+            _shutdownInitiated = true;
             Process.Start(psi);
         }
 
