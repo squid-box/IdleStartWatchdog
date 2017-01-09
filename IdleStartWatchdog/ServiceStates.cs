@@ -6,11 +6,6 @@
     public enum ServiceStates
     {
         /// <summary>
-        /// Computer has started, but noone has logged in.
-        /// </summary>
-        InitialStart,
-
-        /// <summary>
         /// User is currently logged in.
         /// </summary>
         UserLoggedIn,

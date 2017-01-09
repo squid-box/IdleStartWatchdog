@@ -11,7 +11,6 @@
     {
         private EventLog _log;
         private readonly Timer _timer;
-        private const int MinutesToWaitBeforeShutdown = 10;
         private ServiceStates _currentState;
         private DateTime _lastTimeUserLoggedOut;
         private bool _shutdownInitiated;
@@ -19,9 +18,6 @@
         public Service()
         {
             InitializeComponent();
-            _currentState = ServiceStates.InitialStart;
-            _lastTimeUserLoggedOut = DateTime.MinValue;
-            _shutdownInitiated = false;
 
             _log = new EventLog("Application", ".", "IdleStartWatchdog");
             _timer = new Timer(1000) {AutoReset = true};
@@ -30,22 +26,7 @@
 
         private void CheckStatus(object sender, ElapsedEventArgs elapsedEventArgs)
         {
-            if (_currentState == ServiceStates.InitialStart)
-            {
-                // If someone has logged in, this service is done.
-                if (IsSomeoneLoggedOn)
-                {
-                    Log("User logged on, switching state.");
-                    _currentState = ServiceStates.UserLoggedIn;
-                }
-                else if (TimeSpan.FromMilliseconds(Environment.TickCount) > TimeSpan.FromMinutes(MinutesToWaitBeforeShutdown))
-                {
-                    // Check if computer has been running for long enough to shut it down.
-                    Log($"No-one logged on after {MinutesToWaitBeforeShutdown} minutes, shutting down computer.", EventLogEntryType.Warning);
-                    ShutdownComputer();
-                }
-            }
-            else if (_currentState == ServiceStates.UserLoggedIn)
+            if (_currentState == ServiceStates.UserLoggedIn)
             {
                 if (!IsSomeoneLoggedOn)
                 {
@@ -58,15 +39,15 @@
             {
                 if (IsSomeoneLoggedOn)
                 {
-                    Log("Someone logged in again.");
+                    Log("User logged in.");
                     _currentState = ServiceStates.UserLoggedIn;
                 }
                 else
                 {
                     var loggedOut = DateTime.Now - _lastTimeUserLoggedOut;
-                    if (loggedOut > TimeSpan.FromMinutes(MinutesToWaitBeforeShutdown))
+                    if (loggedOut > Watchdog.Default.TimeToWait)
                     {
-                        Log($"No-one has signed in again after {MinutesToWaitBeforeShutdown} minutes, shutting down computer.", EventLogEntryType.Warning);
+                        Log($"No-one has signed in after {Watchdog.Default.TimeToWait.ToString()}, shutting down computer.", EventLogEntryType.Warning);
                         ShutdownComputer();
                     }
                 }
@@ -75,15 +56,30 @@
 
         protected override void OnStart(string[] args)
         {
+            Initialize();
             _timer.Start();
         }
 
         protected override void OnStop()
         {
-            if (_timer != null)
+            _timer.Stop();
+        }
+
+        protected override bool OnPowerEvent(PowerBroadcastStatus powerStatus)
+        {
+            if (powerStatus == PowerBroadcastStatus.ResumeSuspend)
             {
-                _timer.Stop();
+                Initialize();
             }
+
+            return base.OnPowerEvent(powerStatus);
+        }
+
+        private void Initialize()
+        {
+            _currentState = IsSomeoneLoggedOn ? ServiceStates.UserLoggedIn : ServiceStates.UserLoggedOut;
+            _lastTimeUserLoggedOut = DateTime.Now;
+            _shutdownInitiated = false;
         }
 
         private void ShutdownComputer()

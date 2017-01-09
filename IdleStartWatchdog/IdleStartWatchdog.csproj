@@ -56,9 +56,7 @@
   <PropertyGroup>
     <ApplicationIcon>icon.ico</ApplicationIcon>
   </PropertyGroup>
-  <PropertyGroup>
-    <NoWin32Manifest>true</NoWin32Manifest>
-  </PropertyGroup>
+  <PropertyGroup />
   <ItemGroup>
     <Reference Include="Cassia, Version=2.0.0.60, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Cassia.2.0.0.60\lib\2.0\Cassia.dll</HintPath>
@@ -77,11 +75,20 @@
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Watchdog.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+      <DependentUpon>Watchdog.settings</DependentUpon>
+    </Compile>
     <Compile Include="ServiceStates.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
     <None Include="packages.config" />
+    <None Include="Watchdog.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Watchdog.Designer.cs</LastGenOutput>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Content Include="icon.ico" />
