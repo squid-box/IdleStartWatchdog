@@ -45,10 +45,19 @@
                 else
                 {
                     var loggedOut = DateTime.Now - _lastTimeUserLoggedOut;
-                    if (loggedOut > Watchdog.Default.TimeToWait)
+
+                    if (loggedOut > Watchdog.Default.TimeToWait.Add(Watchdog.Default.TimeToWait))
                     {
-                        Log($"No-one has signed in after {Watchdog.Default.TimeToWait.ToString()}, shutting down computer.", EventLogEntryType.Warning);
-                        ShutdownComputer();
+                        Log($"No-one has signed in after double the timeout, somethings wrong (hybrid boot?). Resetting timer.", EventLogEntryType.Error);
+                        _lastTimeUserLoggedOut = DateTime.Now;
+                    }
+                    else if (loggedOut > Watchdog.Default.TimeToWait)
+                    {
+                        if (!_shutdownInitiated)
+                        {
+                            Log($"No-one has signed in after {Watchdog.Default.TimeToWait.ToString()}, shutting down computer.\nLast time someone signed out: {_lastTimeUserLoggedOut}", EventLogEntryType.Warning);
+                            ShutdownComputer();
+                        }                        
                     }
                 }
             }
@@ -84,15 +93,10 @@
 
         private void ShutdownComputer()
         {
-            if (_shutdownInitiated)
-            {
-                return;
-            }
-
             var psi = new ProcessStartInfo()
             {
                 FileName = "shutdown",
-                Arguments = "/s /t 0",
+                Arguments = "/s /t 15",
                 CreateNoWindow = true,
                 UseShellExecute = false
             };
